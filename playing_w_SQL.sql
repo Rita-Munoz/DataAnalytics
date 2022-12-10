@@ -33,6 +33,25 @@ Prompt 1 Questions
 Answer the following questions by constructing a single query without using subqueries, unless otherwise instructed.
 '''
 
+'QUERY ORDER:'
+'1. CREATE DATABASE student:'
+'2. USE student;'
+'3. CREATE TABLE Class (class_id INT PRIMARY KEY, class_name CHAR);'
+'4. CREATE TABLE Student (student_id INT PRIMARY KEY, first_name CHAR, last_name CHAR);'
+'5. CREATE TABLE Enrollment (class_id INT, student_id INT, semester CHAR, grade CHAR,
+  PRIMARY KEY (class_id, student_id, semester));'
+'6. INSERT INTO Class (class_id, class_name) VALUES (101, 'Geometry'), (102, 'English'), (103, 'Physics');'
+'7. ALTER TABLE Class MODIFY COLUMN class_name VARCHAR(50);'
+'8. INSERT INTO Student (student_id, first_name, last_name) VALUES
+  (500, 'Robert', 'Smith'), (762, 'Frank', 'Carter'), (881, 'Joseph', 'Evans'), (933, 'Anne', 'Baker');'
+'9. ALTER TABLE Student MODIFY COLUMN first_name VARCHAR(50);'
+'10. ALTER TABLE Student MODIFY COLUMN last_name VARCHAR(50);'
+'11. ALTER TABLE Enrollment MODIFY COLUMN semester VARCHAR(50);'
+'12. INSERT INTO Enrollment (class_id, student_id, semester, grade)
+  VALUES (101, 500, 'Fall 2019', 'A'), (102, 500, 'Fall 2019', 'B'), (103, 762, 'Fall 2019', 'F'),
+  (101, 881, 'Spring 2020', 'B'), (102, 881, 'Fall 2020','B'), (103, 762, 'Spring 2021', null);'
+'13. ALTER TABLE Enrollment MODIFY COLUMN grade VARCHAR(20);'
+
 '1. Write a query to retrieve all columns from the Enrollment table where the grade of A or B was assigned.'
 SELECT *
 FROM Enrollment
@@ -59,10 +78,9 @@ You need only include the Enrollment and Student tables and may specify the clas
 for the English class. The query should return one row for each student (4 rows) with nulls as grades
 for students who dont have a grade.'
 SELECT s.first_name, s.last_name, e.grade
-FROM Enrollment AS e
-  JOIN Student AS s
-  ON e.student_id = s.student_id
-WHERE e.class_id = 102 OR (e.class_id = 102 AND grade IS null);
+FROM Student AS s
+  LEFT JOIN Enrollment AS e
+  ON e.student_id = s.student_id AND e.class_id = 102;
 
 '5. Write a query to return the class names and the total number of students who have ever been
 enrolled in each class. If a student has enrolled in the same class twice, it is OK to count him twice
@@ -136,26 +154,23 @@ WHERE s.student_id NOT IN
 
 '12. Write a statement to remove any rows from the Student table where the person has not enrolled in any classes.
 You may use either a correlated or non-correlated subquery. Please DO NOT use a JOIN.'
-DELETE s.student_id, s.first_name, s.last_name
-FROM Student AS s
-WHERE s.student_id NOT IN
+DELETE FROM Student
+WHERE student_id NOT IN
 (
-  SELECT e.student_id
-  FROM Enrollment AS e
+  SELECT DISTINCT student_id
+  FROM Enrollment
 );
 
-________________________________
-DELETE FROM Student
-WHERE first_name =
-(
-  SELECT first_name
-  FROM Student AS s
-  WHERE s.student_id NOT IN
-  (
-    SELECT e.student_id
-    FROM Enrollment AS e
-  )
-);
+'QUERY ORDER'
+'1. CREATE DATABASE orders;'
+'2. USE orders;'
+'3. CREATE TABLE Customer_Order (order_num INT PRIMARY KEY, cust_id INT, order_date DATE);'
+'4. INSERT INTO Customer_Order (order_num, cust_id, order_date) VALUES (1,121,'2019-01-15'),
+  (2,234,'2019-07-24'), (3,336,'2020-05-02'), (4,121,'2019-01-15'), (5,336,'2020-03-19'), (6,234,'2019-07-24'),
+  (7,121,'2019-01-15'), (8,336,'2020-06-12');'
+'5. CREATE TABLE Customer (cust_id INT PRIMARY KEY, cust_name VARCHAR(256));'
+'6. INSERT INTO Customer (cust_id, cust_name) VALUES (121, 'Acme Wholesalers'), (234, 'Griffin Electric'),
+  (336, 'East Coast Marine Supplies'), (544, 'Sanford Automotive');'
 
 '''
 Prompt 2 Tables
