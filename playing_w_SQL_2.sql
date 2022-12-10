@@ -10,6 +10,7 @@ region_id (p)   region_name     super_region_id (f)
 105             USA-Southeast   102
 106             USA-West        102
 107             Mexico          101
+
 200             Europe          null
 
 Product
@@ -33,8 +34,35 @@ product_id (p)(f)     region_id (p)(f)      year (p)    month (p)   sales
 1256                  103                   2020        10          1900
 4437                  107                   2020        11          1500
 7684                  104                   2020        12          900
-7684                  200                   2020        10          1500
 
+7684                  200                   2020        10          1500'
+
+'1. CREATE DATABASE sales;'
+'2. USE sales;'
+'3. CREATE TABLE Region (region_id INT PRIMARY KEY, region_name VARCHAR(256), super_region_id INT);'
+'4. INSERT INTO Region (region_id, region_name, super_region_id) VALUES (101,'North America',null),
+  (102,'USA', 101),(103,'Canada', 101), (104,'USA-Northeast',102), (105,'USA-Southeast',102), (106, 'USA-West', 102),
+  (107,'Mexico', 101);'
+'5. CREATE TABLE Product (product_id INT PRIMARY KEY, product_name VARCHAR(256));'
+'6. INSERT INTO Product (product_id, product_name) VALUES (1256,'Gear - Large'), (4437,'Gear - Small'),
+  (5567,'Crankshaft'), (7684,'Sprocket');'
+'7. CREATE TABLE Sales_Totals (product_id INT, region_id INT, year INT, month INT, sales INT,
+  PRIMARY KEY (product_id, region_id, year, month));'
+'8. INSERT INTO Sales_Totals (product_id,region_id,year,month,sales) VALUES
+  (1256, 104, 2020, 1, 1000),
+  (4437, 105, 2020, 2, 1200),
+  (7684, 106, 2020, 3, 800),
+  (1256, 103, 2020, 4, 2200),
+  (4437, 107, 2020, 5, 1700),
+  (7684, 104, 2020, 6, 750),
+  (1256, 104, 2020, 7, 1100),
+  (4437, 105, 2020, 8, 1050),
+  (7684, 106, 2020, 9, 600),
+  (1256, 103, 2020, 10, 1900),
+  (4437, 107, 2020, 11, 1500),
+  (7684, 104, 2020, 12, 900);'
+
+'''
 Answer the following questions using the above tables/data:'''
 
 '1. Write a SELECT statement to return the month column, as well as an additional column for the quarter
@@ -48,7 +76,8 @@ SELECT month,
     ELSE 4
   END
 ) AS quarter
-FROM Sales_Totals;
+FROM Sales_Totals
+ORDER BY month, quarter;
 
 '2. Write a query that will pivot the Sales_Totals data so that there is a column for each of the 4
 products containing the total sales across all months of 2020.  It is OK to include the product_id values
@@ -75,15 +104,19 @@ product_sales_rank which assigns a ranking to each row based on the value of the
 descending order, with a separate set of rankings for each product. Please use SQL RANK functions shown
 in the class video.'
 SELECT *, RANK() OVER(PARTITION BY product_id ORDER BY sales DESC) AS product_sales_rank
-FROM Sales_Totals
-ORDER BY product_sales_rank ASC;
+FROM Sales_Totals;
 
 '5. Expand on the query from question #4 by adding logic to return only those rows with a product_sales_rank
 of 1 or 2.'
-SELECT *, RANK() OVER(PARTITION BY product_id ORDER BY sales DESC) AS product_sales_rank
-FROM Sales_Totals
-WHERE product_sales_rank <= 2
-ORDER BY product_sales_rank ASC;
+
+SELECT *
+FROM
+(
+		SELECT *,
+			RANK() OVER(PARTITION BY st.product_id ORDER BY st.sales DESC) AS product_sales_rank
+        FROM Sales_Totals AS st
+) AS product_rank
+WHERE product_rank.product_sales_rank <= 2;
 
 '6. Write a set of SQL statements which will add a row to the Region table for Europe, and then add a row
 to the Sales_Total table for the Europe region and the Sprocket product (product_id = 7684) for October 2020,
@@ -132,23 +165,25 @@ SELECT product_id, region_id, month, sales,
   ROUND((sales / SUM(sales) OVER(PARTITION BY product_id
     ORDER BY product_id)) * 100, 1) AS pct_product_sales
 FROM Sales_Totals
-WHERE year = 2020;
+WHERE year = 2020
+ORDER BY product_id, sales;
 
-'This return 100% in every row as there is only one sale per month'
+'This return 100% in every row as there is only one sale per month
 SELECT product_id, region_id, month, sales,
   ROUND((sales / SUM(sales) OVER(PARTITION BY product_id, region_id, month
     ORDER BY product_id)) * 100, 1) AS pct_product_sales
 FROM Sales_Totals
-WHERE year = 2020;
+WHERE year = 2020;'
 
 '9. Write a query to return the year, month, and sales columns, along with a 4th column named prior_month_sales
 showing the sales from the prior month.  There are only 12 rows in the sales_totals table, one for
 each month of 2020, so you will not need to group data or filter/partition on region_id or product_id.
 Please use a windowing function for this as shown in the class video.'
+
+CREATE OR REPLACE VIEW PriorMonthSale AS
 SELECT year, month, sales,
   LAG(sales) OVER(ORDER BY month ASC) AS prior_month_sales
-FROM Sales_Totals
-ORDER BY month;
+FROM Sales_Totals;
 
 '10. If the tables used in this prompt are in the ‘sales’ database, write a query to retrieve the name and
 type of each of the columns in the Product table. Please specify the <sales> schema in your answer.
